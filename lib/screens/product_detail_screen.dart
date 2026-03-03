@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../services/cart_service.dart';
+import 'cart_screen.dart';
 
 /// Màn hình chi tiết sản phẩm
 class ProductDetailScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _selectedSize;
   String? _selectedColor;
   int _quantity = 1;
+  final CartService _cartService = CartService();
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +42,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.favorite_border),
+          ListenableBuilder(
+            listenable: _cartService,
+            builder: (context, _) {
+              final count = _cartService.totalItemCount;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const CartScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.shopping_bag_outlined),
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            count > 99 ? '99+' : '$count',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E8C),
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -430,13 +473,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _showCartMessage(BuildContext context) {
+    final product = widget.product;
+    // Kiểm tra cần chọn size/màu chưa
+    if (product.sizes.isNotEmpty && _selectedSize == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn kích thước trước!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    if (product.colors.isNotEmpty && _selectedColor == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn màu sắc trước!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Thêm vào giỏ hàng
+    _cartService.addItem(
+      product,
+      size: _selectedSize,
+      color: _selectedColor,
+      quantity: _quantity,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Đã thêm ${widget.product.name} x$_quantity vào giỏ hàng!',
-        ),
+        content: Text('Đã thêm ${product.name} x$_quantity vào giỏ hàng!'),
         backgroundColor: const Color(0xFFE91E8C),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Xem giỏ',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
+          },
+        ),
       ),
     );
   }

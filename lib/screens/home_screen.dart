@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/firebase_service.dart';
+import '../services/cart_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/app_error_widget.dart';
 import 'product_detail_screen.dart';
 import 'admin_screen.dart';
+import 'search_screen.dart';
+import 'cart_screen.dart';
 
 /// Màn hình chính - hiển thị danh sách sản phẩm
 class HomeScreen extends StatefulWidget {
@@ -16,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
+  final CartService _cartService = CartService();
 
   // Trạng thái
   List<Product> _products = [];
@@ -23,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
   String _selectedCategory = 'Tất cả';
   bool _isSeeding = false;
+  int _cartCount = 0;
 
   // Bí mật: nhấn 5 lần vào tiêu đề để mở trang admin
   int _secretTapCount = 0;
@@ -40,6 +45,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProducts();
+    _cartService.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    _cartService.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() => _cartCount = _cartService.totalItemCount);
   }
 
   /// Hàm tải dữ liệu sản phẩm từ Firebase
@@ -179,13 +195,51 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.search),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            );
+          },
           tooltip: 'Tìm kiếm',
         ),
-        IconButton(
-          icon: const Icon(Icons.shopping_bag_outlined),
-          onPressed: () {},
-          tooltip: 'Giỏ hàng',
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.shopping_bag_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                );
+              },
+              tooltip: 'Giỏ hàng',
+            ),
+            if (_cartCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      _cartCount > 99 ? '99+' : '$_cartCount',
+                      style: const TextStyle(
+                        color: Color(0xFFE91E8C),
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
