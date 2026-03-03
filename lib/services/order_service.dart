@@ -78,4 +78,20 @@ class OrderService {
       throw Exception('Không thể tải lịch sử đơn hàng.');
     }
   }
+
+  /// Xóa toàn bộ lịch sử đơn hàng
+  Future<void> deleteAllOrders() async {
+    try {
+      final snapshot = await _db.collection(_ordersCollection).get();
+      final batch = _db.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } on FirebaseException catch (e) {
+      throw Exception('Lỗi xóa lịch sử đơn hàng: ${e.message ?? e.code}');
+    } catch (e) {
+      throw Exception('Không thể xóa lịch sử đơn hàng.');
+    }
+  }
 }

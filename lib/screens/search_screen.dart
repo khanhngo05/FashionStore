@@ -106,7 +106,6 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() => _filtered = result);
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

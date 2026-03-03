@@ -280,11 +280,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.shopping_bag_outlined),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const CartScreen()),
                 );
+                _loadProducts();
               },
               tooltip: 'Giỏ hàng',
             ),

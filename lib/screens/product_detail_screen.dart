@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../models/cart_item.dart';
+import '../models/order.dart';
 import '../services/cart_service.dart';
+import '../services/order_service.dart';
 import 'cart_screen.dart';
+import 'order_history_screen.dart';
 
 /// Màn hình chi tiết sản phẩm
 class ProductDetailScreen extends StatefulWidget {
@@ -403,7 +407,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _showBuyMessage(context),
+                onPressed: () => _showBuyNowDialog(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE91E8C),
                   foregroundColor: Colors.white,
@@ -523,14 +527,161 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  void _showBuyMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đặt mua ${widget.product.name} x$_quantity thành công!'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
+  /// Dialog xác nhận mua ngay trong trang chi tiết
+  void _showBuyNowDialog(BuildContext context) {
+    final product = widget.product;
+    if (product.sizes.isNotEmpty && _selectedSize == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn kích thước trước!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    if (product.colors.isNotEmpty && _selectedColor == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn màu sắc trước!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.flash_on_rounded, color: Color(0xFFE91E8C)),
+            SizedBox(width: 8),
+            Text('Xác nhận mua ngay'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(product.name,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 4),
+            Text(product.brand,
+                style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  _formatPrice(product.price),
+                  style: const TextStyle(
+                      color: Color(0xFFE91E8C),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
+                ),
+                const Spacer(),
+                Text('Số lượng: $_quantity',
+                    style:
+                        TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ],
+            ),
+            if (_selectedSize != null || _selectedColor != null) ...[
+              const SizedBox(height: 6),
+              if (_selectedSize != null)
+                Text('Size: $_selectedSize',
+                    style: TextStyle(
+                        color: Colors.grey[600], fontSize: 13)),
+              if (_selectedColor != null)
+                Text('Màu: $_selectedColor',
+                    style: TextStyle(
+                        color: Colors.grey[600], fontSize: 13)),
+            ],
+            if (product.stock <= 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text('Hết hàng',
+                    style: TextStyle(
+                        color: Colors.red.shade600,
+                        fontWeight: FontWeight.w600)),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton.icon(
+            onPressed: product.stock < _quantity
+                ? null
+                : () {
+                    Navigator.pop(context);
+                    _placeQuickOrder(context);
+                  },
+            icon: const Icon(Icons.flash_on_rounded, size: 16),
+            label: const Text('Mua ngay'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE91E8C),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _placeQuickOrder(BuildContext context) async {
+    try {
+      final product = widget.product;
+      final item = CartItem(
+        product: product,
+        quantity: _quantity,
+        selectedSize: _selectedSize,
+        selectedColor: _selectedColor,
+      );
+      final Order order = await OrderService().placeOrder([item]);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                    'Đặt hàng thành công! Đơn #${order.id.substring(0, 8).toUpperCase()}'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Lịch sử',
+            textColor: Colors.white,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const OrderHistoryScreen()),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Lỗi: ${e.toString().replaceFirst('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   String _formatPrice(double price) {

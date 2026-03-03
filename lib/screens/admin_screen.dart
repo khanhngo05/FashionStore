@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/firebase_service.dart';
+import '../services/order_service.dart';
+import '../services/cart_service.dart';
 import 'add_edit_product_screen.dart';
 import '../widgets/app_error_widget.dart';
 
@@ -279,7 +281,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ],
         ),
         content: Text(
-          'Bạn có chắc muốn xóa tất cả ${_products.length} sản phẩm?\nHành động này không thể hoàn tác.',
+          'Bạn có chắc muốn xóa tất cả ${_products.length} sản phẩm?\nLịch sử đơn hàng và giỏ hàng cũng sẽ bị xóa.\nHành động này không thể hoàn tác.',
         ),
         actions: [
           TextButton(
@@ -292,10 +294,13 @@ class _AdminScreenState extends State<AdminScreen> {
               setState(() => _isLoading = true);
               try {
                 await _firebaseService.deleteAllProducts();
+                await OrderService().deleteAllOrders();
+                CartService().clear();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Đã xóa toàn bộ sản phẩm'),
+                      content: Text(
+                          'Đã xóa toàn bộ sản phẩm, đơn hàng và giỏ hàng'),
                       backgroundColor: Colors.orange,
                     ),
                   );
