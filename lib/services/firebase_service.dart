@@ -11,8 +11,15 @@ class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   static const String _collection = 'products';
 
+  /// Cờ giả lập lỗi mạng (dùng để demo Error UI & Retry)
+  static bool simulateNetworkError = false;
+
   /// Lấy toàn bộ danh sách sản phẩm từ Firestore
   Future<List<Product>> getProducts() async {
+    if (simulateNetworkError) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      throw Exception('Mất kết nối mạng (giả lập).\nVui lòng kiểm tra kết nối Internet và thử lại.');
+    }
     try {
       final QuerySnapshot snapshot = await _db
           .collection(_collection)
@@ -34,6 +41,10 @@ class FirebaseService {
 
   /// Lấy sản phẩm theo danh mục
   Future<List<Product>> getProductsByCategory(String category) async {
+    if (simulateNetworkError) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      throw Exception('Mất kết nối mạng (giả lập).\nVui lòng kiểm tra kết nối Internet và thử lại.');
+    }
     try {
       final QuerySnapshot snapshot = await _db
           .collection(_collection)
@@ -55,6 +66,10 @@ class FirebaseService {
 
   /// Lấy sản phẩm mới nhất (isNew = true)
   Future<List<Product>> getNewArrivals() async {
+    if (simulateNetworkError) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      throw Exception('Mất kết nối mạng (giả lập).\nVui lòng kiểm tra kết nối Internet và thử lại.');
+    }
     try {
       final QuerySnapshot snapshot = await _db
           .collection(_collection)
@@ -77,6 +92,10 @@ class FirebaseService {
 
   /// Lấy sản phẩm đang giảm giá (isSale = true)
   Future<List<Product>> getSaleProducts() async {
+    if (simulateNetworkError) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      throw Exception('Mất kết nối mạng (giả lập).\nVui lòng kiểm tra kết nối Internet và thử lại.');
+    }
     try {
       final QuerySnapshot snapshot = await _db
           .collection(_collection)

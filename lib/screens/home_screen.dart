@@ -29,6 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSeeding = false;
   int _cartCount = 0;
 
+  // Trạng thái giả lập lỗi mạng
+  bool _isSimulatingError = false;
+
   // Bí mật: nhấn 5 lần vào tiêu đề để mở trang admin
   int _secretTapCount = 0;
   DateTime? _lastTapTime;
@@ -128,6 +131,42 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Bật/tắt giả lập lỗi mạng
+  void _toggleSimulateError() {
+    setState(() {
+      _isSimulatingError = !_isSimulatingError;
+      FirebaseService.simulateNetworkError = _isSimulatingError;
+    });
+    _loadProducts();
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              _isSimulatingError ? Icons.wifi_off : Icons.wifi,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _isSimulatingError
+                    ? 'Đã bật giả lập lỗi mạng'
+                    : 'Đã tắt giả lập – kết nối lại',
+              ),
+            ),
+          ],
+        ),
+        backgroundColor:
+            _isSimulatingError ? Colors.red.shade700 : Colors.green.shade700,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   /// Nhấn 5 lần trong 3 giây để mở trang admin ẩn
   void _handleSecretTap() {
     final now = DateTime.now();
@@ -193,6 +232,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       actions: [
+        // Nút giả lập lỗi mạng
+        Tooltip(
+          message: _isSimulatingError ? 'Tắt giả lập lỗi mạng' : 'Giả lập lỗi mạng',
+          child: IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Icon(
+                _isSimulatingError ? Icons.wifi_off_rounded : Icons.wifi_rounded,
+                key: ValueKey(_isSimulatingError),
+                color: _isSimulatingError ? Colors.red.shade200 : Colors.white,
+              ),
+            ),
+            onPressed: _toggleSimulateError,
+          ),
+        ),
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: () {

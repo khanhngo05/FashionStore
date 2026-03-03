@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/firebase_service.dart';
 import '../services/cart_service.dart';
+import '../widgets/app_error_widget.dart';
 import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
 
@@ -21,6 +22,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Product> _allProducts = [];
   List<Product> _filtered = [];
   bool _isLoading = true;
+  String? _errorMessage;
   String _query = '';
 
   // Bộ lọc
@@ -44,6 +46,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadAll() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final products = await _firebaseService.getProducts();
       if (mounted) {
@@ -53,8 +59,13 @@ class _SearchScreenState extends State<SearchScreen> {
         });
         _applyFilters();
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -275,6 +286,14 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFE91E8C)),
+      );
+    }
+
+    // TRẠNG THÁI LỖI
+    if (_errorMessage != null) {
+      return AppErrorWidget(
+        message: _errorMessage!,
+        onRetry: _loadAll,
       );
     }
 
