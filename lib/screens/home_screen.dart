@@ -133,11 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Bật/tắt giả lập lỗi mạng
   void _toggleSimulateError() {
+    final turningOn = !_isSimulatingError;
     setState(() {
-      _isSimulatingError = !_isSimulatingError;
-      FirebaseService.simulateNetworkError = _isSimulatingError;
+      _isSimulatingError = turningOn;
+      FirebaseService.simulateNetworkError = turningOn;
     });
-    _loadProducts();
 
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -145,26 +145,32 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Row(
           children: [
             Icon(
-              _isSimulatingError ? Icons.wifi_off : Icons.wifi,
+              turningOn ? Icons.wifi_off : Icons.wifi,
               color: Colors.white,
               size: 18,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                _isSimulatingError
+                turningOn
                     ? 'Đã bật giả lập lỗi mạng'
-                    : 'Đã tắt giả lập – kết nối lại',
+                    : 'Mạng đã khôi phục – nhấn "Thử lại" để tải dữ liệu',
               ),
             ),
           ],
         ),
         backgroundColor:
-            _isSimulatingError ? Colors.red.shade700 : Colors.green.shade700,
-        duration: const Duration(seconds: 2),
+            turningOn ? Colors.red.shade700 : Colors.green.shade700,
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
     );
+
+    // Chỉ tự động gọi lại khi BẬT lỗi (để kích hoạt màn hình lỗi).
+    // Khi TẮT lỗi, giữ nguyên màn hình lỗi; người dùng phải bấm "Thử lại".
+    if (turningOn) {
+      _loadProducts();
+    }
   }
 
   /// Nhấn 5 lần trong 3 giây để mở trang admin ẩn
