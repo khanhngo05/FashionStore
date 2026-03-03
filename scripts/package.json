@@ -1,0 +1,11 @@
+{
+  "name": "fashionstore-seed",
+  "version": "1.0.0",
+  "description": "Script seed dữ liệu vào Firestore cho FashionStore",
+  "main": "seed.js",
+  "type": "module",
+  "scripts": {
+    "seed": "node seed.js",
+    "clear": "node clear.js"
+  }
+}

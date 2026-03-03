@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Collection: products
+    // - Đọc: cho phép tất cả (không cần đăng nhập)
+    // - Ghi: cho phép tất cả (test mode - dùng cho bài thực hành)
+    // Thực tế nên giới hạn: chỉ admin mới được write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+  }
+}
