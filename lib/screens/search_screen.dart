@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/firebase_service.dart';
-import '../services/cart_service.dart';
 import '../widgets/app_error_widget.dart';
 import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
@@ -17,7 +16,6 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FirebaseService _firebaseService = FirebaseService();
-  final CartService _cartService = CartService();
 
   List<Product> _allProducts = [];
   List<Product> _filtered = [];
@@ -108,13 +106,6 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() => _filtered = result);
   }
 
-  String _formatPrice(double price) {
-    final formatted = price.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]}.',
-        );
-    return '$formatted₫';
-  }
 
   @override
   Widget build(BuildContext context) {

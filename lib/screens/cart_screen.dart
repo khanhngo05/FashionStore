@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/cart_service.dart';
+import '../services/order_service.dart';
 import '../models/cart_item.dart';
+import '../models/order.dart';
+import 'order_history_screen.dart';
 
 /// Màn hình giỏ hàng
 class CartScreen extends StatefulWidget {
@@ -12,6 +15,8 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
+  final OrderService _orderService = OrderService();
+  bool _isPlacingOrder = false;
 
   String _formatPrice(double price) {
     final formatted = price.toInt().toString().replaceAllMapped(
@@ -41,10 +46,44 @@ class _CartScreenState extends State<CartScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Xác nhận đặt hàng'),
-        content: Text(
-          'Tổng thanh toán: ${_formatPrice(_cartService.totalPrice)}\n'
-          'Bạn có chắc muốn đặt hàng?',
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.shopping_bag_outlined, color: Color(0xFFE91E8C)),
+            SizedBox(width: 8),
+            Text('Xác nhận đặt hàng'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${_cartService.totalItemCount} sản phẩm',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Tổng thanh toán:',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  _formatPrice(_cartService.totalPrice),
+                  style: const TextStyle(
+                    color: Color(0xFFE91E8C),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Bạn có chắc muốn đặt hàng?\nTồn kho sẽ được cập nhật tự động.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -53,20 +92,111 @@ class _CartScreenState extends State<CartScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              _cartService.clear();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đặt hàng thành công! Cảm ơn bạn.'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              _placeOrder();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE91E8C),
+              foregroundColor: Colors.white,
             ),
             child: const Text('Đặt hàng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _placeOrder() async {
+    setState(() => _isPlacingOrder = true);
+    try {
+      final items = List.of(_cartService.items);
+      final Order order = await _orderService.placeOrder(items);
+      _cartService.clear();
+
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      _showOrderSuccessDialog(order);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi đặt hàng: ${e.toString().replaceFirst('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showOrderSuccessDialog(Order order) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.check_circle_rounded,
+                  color: Colors.green.shade500, size: 48),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Đặt hàng thành công!',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Đơn #${order.id.substring(0, 8).toUpperCase()}',
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _formatPrice(order.totalPrice),
+              style: const TextStyle(
+                color: Color(0xFFE91E8C),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${order.totalItemCount} sản phẩm • Tồn kho đã được cập nhật',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // đóng dialog
+              Navigator.pop(context); // về home
+            },
+            child: const Text('Về trang chủ'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const OrderHistoryScreen()),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_rounded, size: 16),
+            label: const Text('Xem lịch sử'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE91E8C),
+              foregroundColor: Colors.white,
+            ),
           ),
         ],
       ),
@@ -129,7 +259,33 @@ class _CartScreenState extends State<CartScreen> {
             ),
         ],
       ),
-      body: items.isEmpty ? _buildEmptyCart() : _buildCartList(items),
+      body: Stack(
+        children: [
+          items.isEmpty ? _buildEmptyCart() : _buildCartList(items),
+          if (_isPlacingOrder)
+            Container(
+              color: Colors.black.withAlpha(60),
+              child: const Center(
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Color(0xFFE91E8C)),
+                        SizedBox(height: 16),
+                        Text('Đang xử lý đơn hàng...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: items.isEmpty ? null : _buildCheckoutBar(),
     );
   }

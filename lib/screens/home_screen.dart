@@ -8,6 +8,7 @@ import 'product_detail_screen.dart';
 import 'admin_screen.dart';
 import 'search_screen.dart';
 import 'cart_screen.dart';
+import 'order_history_screen.dart';
 
 /// Màn hình chính - hiển thị danh sách sản phẩm
 class HomeScreen extends StatefulWidget {
@@ -227,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontSize: 11, color: Colors.white70),
             ),
             Text(
-              'FashionStore',
+              'G10 Store',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -262,6 +263,17 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
           tooltip: 'Tìm kiếm',
+        ),
+        // Nút lịch sử đơn hàng
+        IconButton(
+          icon: const Icon(Icons.receipt_long_outlined),
+          tooltip: 'Lịch sử đơn hàng',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+            );
+          },
         ),
         Stack(
           alignment: Alignment.center,
@@ -323,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Chào mừng đến với FashionStore!',
+                  'Chào mừng đến với G10 Store!',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

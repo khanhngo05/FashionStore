@@ -70,6 +70,12 @@ class _AdminScreenState extends State<AdminScreen> {
             tooltip: 'Làm mới',
             onPressed: _loadProducts,
           ),
+          if (_products.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined),
+              tooltip: 'Xóa toàn bộ sản phẩm',
+              onPressed: _confirmDeleteAll,
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -191,6 +197,134 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+  /// Xóa một sản phẩm
+  void _confirmDeleteProduct(Product product) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Xóa sản phẩm'),
+          ],
+        ),
+        content: RichText(
+          text: TextSpan(
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
+            children: [
+              const TextSpan(text: 'Bạn có chắc muốn xóa\n'),
+              TextSpan(
+                text: product.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: '?\nHành động này không thể hoàn tác.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _firebaseService.deleteProduct(product.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Đã xóa "${product.name}"'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  _loadProducts();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceFirst('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.delete_outline, size: 16),
+            label: const Text('Xóa'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Xóa toàn bộ sản phẩm
+  void _confirmDeleteAll() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_sweep_outlined, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Xóa toàn bộ'),
+          ],
+        ),
+        content: Text(
+          'Bạn có chắc muốn xóa tất cả ${_products.length} sản phẩm?\nHành động này không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() => _isLoading = true);
+              try {
+                await _firebaseService.deleteAllProducts();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã xóa toàn bộ sản phẩm'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  _loadProducts();
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceFirst('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.delete_sweep_outlined, size: 16),
+            label: const Text('Xóa tất cả'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatChip(IconData icon, String label) {
     return Row(
       children: [
@@ -256,18 +390,28 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ],
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.edit_outlined, color: Color(0xFF333333)),
-          tooltip: 'Chỉnh sửa',
-          onPressed: () async {
-            final changed = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AddEditProductScreen(product: product),
-              ),
-            );
-            if (changed == true) _loadProducts();
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Color(0xFF333333)),
+              tooltip: 'Chỉnh sửa',
+              onPressed: () async {
+                final changed = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddEditProductScreen(product: product),
+                  ),
+                );
+                if (changed == true) _loadProducts();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Xóa sản phẩm',
+              onPressed: () => _confirmDeleteProduct(product),
+            ),
+          ],
         ),
       ),
     );

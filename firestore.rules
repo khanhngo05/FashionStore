@@ -11,5 +11,13 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Collection: orders
+    // - Đọc/Ghi: cho phép tất cả (test mode - dùng cho bài thực hành)
+    // Thực tế nên giới hạn theo user đăng nhập
+    match /orders/{orderId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
   }
 }
